@@ -1,0 +1,32 @@
+@import 'tailwindcss';
+
+/* Paleta de la academia: negro de fondo, blanco para texto y verde neón de acento. */
+@theme {
+  --color-fondo: #000000;
+  --color-superficie: #0e0e0e;
+  --color-superficie-alta: #171717;
+  --color-borde: #2a2a2a;
+  --color-borde-fuerte: #444444;
+  --color-texto: #ffffff;
+  --color-texto-suave: #a3a3a3;
+  --color-acento: #c4f000;
+  --color-acento-hover: #b8e815;
+  --color-acento-suave: #d8ec94;
+  --color-peligro: #ff6b6b;
+
+  --font-sans: 'Barlow', system-ui, sans-serif;
+  --font-display: 'Barlow Condensed', 'Barlow', system-ui, sans-serif;
+}
+
+html {
+  color-scheme: dark;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  @apply bg-fondo text-texto font-sans antialiased;
+}
+
+:focus-visible {
+  @apply outline-2 outline-offset-2 outline-acento;
+}
