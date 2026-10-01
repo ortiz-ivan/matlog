@@ -51,6 +51,15 @@ pnpm preview    # sirve el build
   Strict-Transport-Security: max-age=31536000
   ```
 
+  Para publicar, compilar con las dependencias exactas del lockfile y comprobar antes que
+  ninguna tiene vulnerabilidades conocidas:
+
+  ```bash
+  pnpm install --frozen-lockfile
+  pnpm audit --prod
+  pnpm build
+  ```
+
   Si se añade un recurso externo nuevo (otra fuente, un CDN, imágenes remotas), hay que
   permitirlo en la CSP de `vite.config.ts` o el navegador lo bloqueará.
 
