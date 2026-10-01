@@ -13,7 +13,12 @@ import { defineConfig, loadEnv, type Plugin } from 'vite'
  * el servidor que publique la app: ver README.
  */
 function csp(apiUrl: string | undefined): Plugin {
-  if (!apiUrl) throw new Error('Falta VITE_API_URL en .env (ver .env.example)')
+  if (!apiUrl) {
+    throw new Error(
+      'Falta VITE_API_URL: en local va en .env (ver .env.example); en Cloudflare, en las ' +
+        'variables del build (Settings → Build → Variables and secrets), no en las del Worker',
+    )
+  }
   const politica = [
     "default-src 'self'",
     "script-src 'self'",

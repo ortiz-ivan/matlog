@@ -1,0 +1,13 @@
+// Publicación en Cloudflare Workers como sitio estático (sin código de Worker).
+// https://developers.cloudflare.com/workers/static-assets/
+{
+  // Debe coincidir con el nombre del Worker creado en el panel de Cloudflare.
+  "name": "matlog",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist/",
+    // Cualquier ruta que no sea un archivo (/clases/12...) devuelve index.html con 200
+    // y React Router se encarga.
+    "not_found_handling": "single-page-application",
+  },
+}
