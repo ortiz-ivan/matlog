@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 
-import { api, onSesionExpirada, tokenStore } from '../api/client'
+import { api, debeRenovar, onSesionExpirada, tokenStore } from '../api/client'
 import type { Registro, Token, Usuario } from '../api/types'
 import { AuthContext, type Auth } from './context'
 
@@ -28,6 +28,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [qc])
 
   useEffect(() => onSesionExpirada(logout), [logout])
+
+  // El token dura poco (JWT_EXPIRE_MINUTES en el backend): se renueva mientras la app se
+  // usa. Solo cambia el token guardado, no el estado: sigue siendo la misma sesión y así
+  // no se vuelve a pedir /me.
+  useEffect(() => {
+    if (token === null) return
+    let renovando = false
+    const revisar = async () => {
+      const actual = tokenStore.get()
+      if (renovando || document.hidden || !actual || !debeRenovar(actual)) return
+      renovando = true
+      try {
+        const nuevo = await api<Token>('/api/auth/renovar', { method: 'POST' })
+        // Si entretanto se cerró sesión (o cambió el token), no resucitarla.
+        if (tokenStore.get() === actual) tokenStore.set(nuevo.access_token)
+      } catch {
+        // Sin conexión: se reintenta en la próxima revisión. Un 401 ya cierra la sesión.
+      } finally {
+        renovando = false
+      }
+    }
+    void revisar()
+    const intervalo = setInterval(revisar, 60_000)
+    document.addEventListener('visibilitychange', revisar)
+    return () => {
+      clearInterval(intervalo)
+      document.removeEventListener('visibilitychange', revisar)
+    }
+  }, [token])
 
   const auth = useMemo<Auth>(
     () => ({

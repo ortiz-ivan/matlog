@@ -1,7 +1,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { POR_PAGINA } from '../lib/paginacion'
-import { api } from './client'
+import { api, tokenStore } from './client'
 import type {
   Clase,
   ClaseIn,
@@ -10,6 +10,7 @@ import type {
   PerfilActualizar,
   Tecnica,
   TecnicaIn,
+  Token,
   Turno,
   TurnoIn,
   Usuario,
@@ -201,7 +202,10 @@ export function useActualizarPerfil() {
 export function useCambiarPassword() {
   return useMutation({
     mutationFn: (datos: { actual: string; nueva: string }) =>
-      api<void>('/api/auth/me/password', { method: 'PUT', json: datos }),
+      api<Token>('/api/auth/me/password', { method: 'PUT', json: datos }),
+    // El backend invalida todos los tokens anteriores (cierra las demás sesiones) y
+    // devuelve uno nuevo para que esta siga abierta.
+    onSuccess: (nuevo) => tokenStore.set(nuevo.access_token),
   })
 }
 

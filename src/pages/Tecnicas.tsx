@@ -67,6 +67,7 @@ export function Tecnicas() {
         <Input
           type="search"
           placeholder="Buscar (armbar, triangulo, knee cut…)"
+          maxLength={100}
           value={q}
           onChange={(e) => setFiltro('q', e.target.value)}
         />

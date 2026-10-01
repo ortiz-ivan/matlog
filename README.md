@@ -32,6 +32,28 @@ pnpm lint       # oxlint
 pnpm preview    # sirve el build
 ```
 
+## Seguridad
+
+- **Sesión**: el token JWT se guarda en `localStorage` y se envía en la cabecera
+  `Authorization` (sin cookies, así que no hay CSRF). Dura poco (`JWT_EXPIRE_MINUTES` del
+  backend, 24 h) y `AuthProvider` lo renueva mientras se usa la app, sin pasar del
+  máximo de sesión (`SESION_MAX_DIAS`, 7 días).
+- **CSP**: `pnpm build` añade al `index.html` una Content-Security-Policy estricta
+  (`vite.config.ts`): solo scripts propios, estilos propios y de Google Fonts, y
+  conexiones solo al origen de `VITE_API_URL`. Es lo que impide que un script inyectado
+  robe el token. No se aplica en `pnpm dev`, porque el HMR necesita scripts inline.
+- **Al publicar**, el servidor debe añadir las cabeceras que no funcionan en `<meta>`:
+
+  ```text
+  Content-Security-Policy: frame-ancestors 'none'
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Strict-Transport-Security: max-age=31536000
+  ```
+
+  Si se añade un recurso externo nuevo (otra fuente, un CDN, imágenes remotas), hay que
+  permitirlo en la CSP de `vite.config.ts` o el navegador lo bloqueará.
+
 ## Estructura
 
 ```text

@@ -56,6 +56,7 @@ export function Usuarios() {
         <Input
           type="search"
           placeholder="Buscar por nombre o usuario"
+          maxLength={100}
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
         />

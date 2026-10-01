@@ -106,6 +106,7 @@ function Formulario({ tecnica }: { tecnica?: Tecnica }) {
         <Textarea
           className="min-h-40"
           placeholder="Pasos, detalles clave, errores comunes…"
+          maxLength={5000}
           value={descripcion}
           onChange={(e) => setDescripcion(e.target.value)}
         />
@@ -115,6 +116,7 @@ function Formulario({ tecnica }: { tecnica?: Tecnica }) {
         <Input
           type="url"
           placeholder="https://…"
+          maxLength={500}
           value={videoUrl}
           onChange={(e) => setVideoUrl(e.target.value)}
         />

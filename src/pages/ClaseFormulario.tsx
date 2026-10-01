@@ -218,6 +218,7 @@ function Formulario({ turnos, clase }: { turnos: Turno[]; clase?: Clase }) {
           <Campo etiqueta="Notas">
             <Textarea
               placeholder="Detalles, variantes, puntos clave…"
+              maxLength={5000}
               value={notas}
               onChange={(e) => setNotas(e.target.value)}
             />
@@ -226,6 +227,7 @@ function Formulario({ turnos, clase }: { turnos: Turno[]; clase?: Clase }) {
             <Input
               type="url"
               placeholder="https://…"
+              maxLength={500}
               value={videoUrl}
               onChange={(e) => setVideoUrl(e.target.value)}
             />

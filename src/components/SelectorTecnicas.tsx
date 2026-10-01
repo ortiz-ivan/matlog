@@ -66,6 +66,7 @@ export function SelectorTecnicas({ seleccionadas, onChange }: Props) {
           aria-expanded={resultados.length > 0}
           aria-controls={idLista}
           placeholder="Buscar técnica (armbar, knee cut…)"
+          maxLength={100}
           value={busqueda}
           onChange={(e) => {
             setBusqueda(e.target.value)

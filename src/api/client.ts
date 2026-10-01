@@ -27,6 +27,24 @@ export const tokenStore = {
   },
 }
 
+/**
+ * true si el token ya ha consumido la mitad de su vida y conviene renovarlo.
+ *
+ * Lee iat/exp sin verificar la firma: no es una comprobación de seguridad (eso lo hace
+ * el backend), solo decide cuándo pedir uno nuevo. Al final de la sesión el backend
+ * emite tokens cada vez más cortos; con el mínimo de 5 min no se piden en bucle.
+ */
+export function debeRenovar(token: string, ahora = Date.now() / 1000): boolean {
+  try {
+    const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')
+    const { iat, exp } = JSON.parse(atob(base64)) as { iat?: unknown; exp?: unknown }
+    if (typeof iat !== 'number' || typeof exp !== 'number') return false
+    return ahora - iat >= Math.max((exp - iat) / 2, 5 * 60)
+  } catch {
+    return false
+  }
+}
+
 export class ApiError extends Error {
   readonly status: number
 
