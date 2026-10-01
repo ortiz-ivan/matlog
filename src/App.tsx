@@ -6,7 +6,7 @@ import { useAuth } from './auth/context'
 import { Layout } from './components/Layout'
 import { Logo } from './components/Logo'
 import { Cargando, MensajeError } from './components/ui'
-import { Login, Registro } from './pages/Acceso'
+import { Login } from './pages/Acceso'
 import { Calendario } from './pages/Calendario'
 import { ClaseDetalle } from './pages/ClaseDetalle'
 import { ClaseFormulario } from './pages/ClaseFormulario'
@@ -43,7 +43,7 @@ function SoloAdmin() {
   return <Outlet />
 }
 
-/** Login y registro: si ya hay sesión, a la app. */
+/** Login: si ya hay sesión, a la app. */
 function SinSesion() {
   const { usuario, cargando } = useAuth()
   if (cargando) return <Arranque />
@@ -82,7 +82,8 @@ const router = createBrowserRouter([
         element: <SinSesion />,
         children: [
           { path: '/login', element: <Login /> },
-          { path: '/registro', element: <Registro /> },
+          // Sin ruta /registro: las cuentas las crea un admin desde Usuarios. El
+          // formulario (Registro en pages/Acceso) sigue disponible por si se reabre.
         ],
       },
       {

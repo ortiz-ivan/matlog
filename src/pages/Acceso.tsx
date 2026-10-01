@@ -73,10 +73,7 @@ export function Login() {
         </Boton>
       </form>
       <p className="mt-8 text-center text-sm text-texto-suave">
-        ¿Primera vez?{' '}
-        <Link to="/registro" className="font-bold text-acento hover:underline">
-          Crea tu cuenta
-        </Link>
+        ¿No tienes cuenta? Pídesela a un administrador.
       </p>
     </PantallaAcceso>
   )
