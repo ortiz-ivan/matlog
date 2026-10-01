@@ -2,9 +2,13 @@ import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 
 import { useClases, useTurnos } from '../api/queries'
+import { useAuth } from '../auth/context'
 import type { Clase, FiltrosClases, Modalidad } from '../api/types'
-import { Boton, Cargando, Chip, Etiqueta, Input, MensajeError, Titulo } from '../components/ui'
+import { Paginacion } from '../components/Paginacion'
+import { SelectorFecha } from '../components/SelectorFecha'
+import { Cargando, Chip, Etiqueta, MensajeError, Titulo } from '../components/ui'
 import { MODALIDADES, horario, partesFecha } from '../lib/formato'
+import { conFiltro, rango, usePaginaURL } from '../lib/paginacion'
 
 function leerFiltros(params: URLSearchParams): FiltrosClases {
   const turno = Number(params.get('turno'))
@@ -23,33 +27,34 @@ export function Clases() {
   const [verFechas, setVerFechas] = useState(Boolean(filtros.desde || filtros.hasta))
 
   const turnos = useTurnos()
-  const clases = useClases(filtros)
+  const pagina = usePaginaURL()
+  const clases = useClases(filtros, pagina)
 
   function setFiltro(clave: string, valor: string | undefined) {
-    setParams(
-      (actual) => {
-        const nuevos = new URLSearchParams(actual)
-        if (valor) nuevos.set(clave, valor)
-        else nuevos.delete(clave)
-        return nuevos
-      },
-      { replace: true },
-    )
+    setParams((actual) => conFiltro(actual, clave, valor ?? null), {
+      replace: true,
+      preventScrollReset: true,
+    })
   }
 
-  const hayFiltros = params.size > 0
-  const lista = clases.data?.pages.flatMap((p) => p.items) ?? []
-  const total = clases.data?.pages[0]?.total
+  const hayFiltros = Object.values(filtros).some((v) => v !== undefined)
+  const lista = clases.data?.items ?? []
+  const total = clases.data?.total
+  const { desde, hasta } = rango(pagina, total ?? 0)
 
   return (
     <div className="space-y-6">
       <div className="flex items-end justify-between">
-        <Titulo>Clases</Titulo>
-        {total !== undefined && <span className="text-sm text-texto-suave">{total} en total</span>}
+        <Titulo>Historial</Titulo>
+        {total !== undefined && total > 0 && (
+          <span className="text-sm text-texto-suave">
+            {desde}–{hasta} de {total}
+          </span>
+        )}
       </div>
 
       <section aria-label="Filtros" className="space-y-3">
-        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+        <div className="scrollbar-oculta -mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
           <Chip activo={!filtros.turno_id} onClick={() => setFiltro('turno', undefined)}>
             Todos
           </Chip>
@@ -79,31 +84,36 @@ export function Clases() {
 
         {verFechas && (
           <div className="grid grid-cols-2 gap-3">
-            <label className="space-y-1 text-sm text-texto-suave">
-              <span>Desde</span>
-              <Input
-                type="date"
-                value={filtros.desde ?? ''}
+            <div className="space-y-1 text-sm text-texto-suave">
+              <span className="block">Desde</span>
+              <SelectorFecha
+                etiqueta="Desde"
+                placeholder="Cualquiera"
+                permitirVacio
+                valor={filtros.desde ?? ''}
                 max={filtros.hasta}
-                onChange={(e) => setFiltro('desde', e.target.value)}
+                onChange={(v) => setFiltro('desde', v || undefined)}
               />
-            </label>
-            <label className="space-y-1 text-sm text-texto-suave">
-              <span>Hasta</span>
-              <Input
-                type="date"
-                value={filtros.hasta ?? ''}
+            </div>
+            <div className="space-y-1 text-sm text-texto-suave">
+              <span className="block">Hasta</span>
+              <SelectorFecha
+                etiqueta="Hasta"
+                placeholder="Cualquiera"
+                permitirVacio
+                alinear="derecha"
+                valor={filtros.hasta ?? ''}
                 min={filtros.desde}
-                onChange={(e) => setFiltro('hasta', e.target.value)}
+                onChange={(v) => setFiltro('hasta', v || undefined)}
               />
-            </label>
+            </div>
           </div>
         )}
 
         {hayFiltros && (
           <button
             type="button"
-            onClick={() => setParams({}, { replace: true })}
+            onClick={() => setParams({}, { replace: true, preventScrollReset: true })}
             className="text-sm font-semibold text-acento hover:underline"
           >
             Quitar filtros
@@ -119,7 +129,10 @@ export function Clases() {
       ) : lista.length === 0 ? (
         !clases.isError && <SinClases filtrado={hayFiltros} />
       ) : (
-        <ul className="space-y-3">
+        <ul
+          className={`space-y-3 transition-opacity ${clases.isPlaceholderData ? 'opacity-50' : ''}`}
+          aria-busy={clases.isPlaceholderData}
+        >
           {lista.map((c) => (
             <li key={c.id}>
               <TarjetaClase clase={c} />
@@ -128,16 +141,7 @@ export function Clases() {
         </ul>
       )}
 
-      {clases.hasNextPage && (
-        <Boton
-          variante="secundario"
-          className="w-full"
-          cargando={clases.isFetchingNextPage}
-          onClick={() => void clases.fetchNextPage()}
-        >
-          Cargar más
-        </Boton>
-      )}
+      {total !== undefined && <Paginacion pagina={pagina} total={total} />}
     </div>
   )
 }
@@ -185,6 +189,7 @@ function TarjetaClase({ clase }: { clase: Clase }) {
 }
 
 function SinClases({ filtrado }: { filtrado: boolean }) {
+  const puedeRegistrar = useAuth().usuario?.es_admin ?? false
   return (
     <div className="rounded-2xl border border-dashed border-borde-fuerte px-6 py-12 text-center">
       <p className="font-display text-2xl font-bold uppercase">
@@ -193,9 +198,11 @@ function SinClases({ filtrado }: { filtrado: boolean }) {
       <p className="mt-2 text-texto-suave">
         {filtrado
           ? 'Prueba con otros filtros.'
-          : 'Registra la primera clase para empezar el historial.'}
+          : puedeRegistrar
+            ? 'Registra la primera clase para empezar el historial.'
+            : 'Aparecerán aquí cuando un admin registre la primera.'}
       </p>
-      {!filtrado && (
+      {!filtrado && puedeRegistrar && (
         <Link
           to="/clases/nueva"
           className="mt-6 inline-flex min-h-12 items-center rounded-xl bg-acento px-5 font-bold text-black hover:bg-acento-hover"

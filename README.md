@@ -45,9 +45,11 @@ src/
 │   ├── queries.ts        # hooks de TanStack Query
 │   └── types.ts          # espejo de los esquemas del backend
 ├── auth/                 # contexto de sesión (login, registro, logout)
-├── components/           # Layout, SelectorTecnicas y componentes base (ui.tsx)
-├── lib/formato.ts        # fechas, etiquetas en castellano, turno sugerido
-└── pages/                # Acceso (login/registro), Clases, ClaseDetalle, ClaseFormulario
+├── components/           # Layout, MenuUsuario, Volver, SelectorTecnicas y base (ui.tsx)
+├── lib/                  # formato, calendario, paginación y navegación
+└── pages/                # Acceso, Inicio, Clases (historial), ClaseDetalle, ClaseFormulario,
+                          # Calendario, Perfil, Turnos y Usuarios (solo admins),
+                          # Tecnicas, FichaTecnica, TecnicaFormulario
 ```
 
 ## Diseño

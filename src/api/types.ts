@@ -47,13 +47,30 @@ export interface Usuario extends UsuarioResumen {
   activo: boolean
 }
 
-export interface Registro {
+export interface UsuarioCrear {
   nombre: string
   username: string
   email: string
   password: string
   cinturon: Cinturon | null
+}
+
+export interface Registro extends UsuarioCrear {
   codigo_invitacion: string
+}
+
+/** Alta hecha por un admin. */
+export interface UsuarioNuevo extends UsuarioCrear {
+  es_admin: boolean
+}
+
+/** Cambios de un admin sobre un usuario (solo se envían los que cambian). */
+export interface UsuarioActualizar {
+  nombre?: string
+  password?: string
+  cinturon?: Cinturon | null
+  es_admin?: boolean
+  activo?: boolean
 }
 
 export interface TurnoResumen {
@@ -61,10 +78,24 @@ export interface TurnoResumen {
   nombre: string
 }
 
+/** Un día de la semana con clase en un turno. dia: 0 = lunes ... 6 = domingo. */
+export interface TurnoDia {
+  dia: number
+  modalidad: Modalidad
+}
+
 export interface Turno extends TurnoResumen {
   hora_inicio: string
   hora_fin: string
   activo: boolean
+  dias: TurnoDia[]
+}
+
+export interface TurnoIn {
+  nombre: string
+  hora_inicio: string
+  hora_fin: string
+  dias: TurnoDia[]
 }
 
 export interface TecnicaResumen {
@@ -105,10 +136,6 @@ export interface Clase extends ClaseResumen {
   tecnicas: TecnicaResumen[]
 }
 
-export interface TecnicaDetalle extends Tecnica {
-  clases: ClaseResumen[]
-}
-
 export interface ClaseIn {
   fecha: string
   turno_id: number
@@ -126,4 +153,10 @@ export interface FiltrosClases {
   turno_id?: number
   modalidad?: Modalidad
   tecnica_id?: number
+}
+
+/** Lo que cada usuario puede cambiar de sí mismo. */
+export interface PerfilActualizar {
+  nombre?: string
+  cinturon?: Cinturon | null
 }

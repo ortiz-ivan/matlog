@@ -1,15 +1,17 @@
 import type { ReactNode } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { Link, useParams } from 'react-router'
 
 import { useClase, useEliminarClase } from '../api/queries'
 import { useAuth } from '../auth/context'
 import { Boton, Cargando, Etiqueta, MensajeError, Titulo } from '../components/ui'
+import { Volver } from '../components/Volver'
 import { CATEGORIAS, MODALIDADES, POSICIONES, formatoFechaLarga, horario } from '../lib/formato'
+import { useVolver } from '../lib/navegacion'
 
 export function ClaseDetalle() {
   const id = Number(useParams().id)
   const { usuario } = useAuth()
-  const navigate = useNavigate()
+  const volver = useVolver('/clases')
   const clase = useClase(id)
   const eliminar = useEliminarClase()
 
@@ -17,7 +19,7 @@ export function ClaseDetalle() {
   if (clase.isError) {
     return (
       <div className="space-y-4">
-        <Volver />
+        <Volver alternativa="/clases" />
         <MensajeError error={clase.error} onReintentar={() => void clase.refetch()} />
       </div>
     )
@@ -27,13 +29,13 @@ export function ClaseDetalle() {
 
   function borrar() {
     if (!window.confirm(`¿Eliminar la clase "${c.tema}"? No se puede deshacer.`)) return
-    eliminar.mutate(c.id, { onSuccess: () => navigate('/clases', { replace: true }) })
+    eliminar.mutate(c.id, { onSuccess: volver })
   }
 
   return (
     <article className="space-y-8">
       <div className="space-y-3">
-        <Volver />
+        <Volver alternativa="/clases" />
         <p className="font-semibold text-acento">{formatoFechaLarga(c.fecha)}</p>
         <Titulo>{c.tema}</Titulo>
       </div>
@@ -54,12 +56,17 @@ export function ClaseDetalle() {
         ) : (
           <ul className="divide-y divide-borde overflow-hidden rounded-2xl border border-borde">
             {c.tecnicas.map((t) => (
-              <li key={t.id} className="flex items-center justify-between gap-3 bg-superficie p-4">
-                <span className="font-semibold">{t.nombre}</span>
-                <span className="flex shrink-0 flex-col items-end gap-1 text-right">
-                  <Etiqueta acento>{CATEGORIAS[t.categoria]}</Etiqueta>
-                  <span className="text-xs text-texto-suave">{POSICIONES[t.posicion]}</span>
-                </span>
+              <li key={t.id}>
+                <Link
+                  to={`/tecnicas/${t.id}`}
+                  className="flex items-center justify-between gap-3 bg-superficie p-4 hover:bg-superficie-alta"
+                >
+                  <span className="font-semibold">{t.nombre}</span>
+                  <span className="flex shrink-0 flex-col items-end gap-1 text-right">
+                    <Etiqueta acento>{CATEGORIAS[t.categoria]}</Etiqueta>
+                    <span className="text-xs text-texto-suave">{POSICIONES[t.posicion]}</span>
+                  </span>
+                </Link>
               </li>
             ))}
           </ul>
@@ -104,14 +111,6 @@ export function ClaseDetalle() {
         </div>
       </footer>
     </article>
-  )
-}
-
-function Volver() {
-  return (
-    <Link to="/clases" className="inline-block text-sm font-semibold text-texto-suave hover:text-texto">
-      ← Clases
-    </Link>
   )
 }
 

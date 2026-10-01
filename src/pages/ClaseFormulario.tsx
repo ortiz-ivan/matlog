@@ -1,9 +1,11 @@
 import { useState, type FormEvent } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { useNavigate, useParams, useSearchParams } from 'react-router'
 
 import { useClase, useGuardarClase, useTurnos } from '../api/queries'
 import type { Clase, Modalidad, TecnicaResumen, Turno } from '../api/types'
+import { SelectorFecha } from '../components/SelectorFecha'
 import { SelectorTecnicas } from '../components/SelectorTecnicas'
+import { Volver } from '../components/Volver'
 import {
   Boton,
   Campo,
@@ -14,7 +16,9 @@ import {
   Textarea,
   Titulo,
 } from '../components/ui'
+import { modalidadProgramada } from '../lib/calendario'
 import { MODALIDADES, hoyISO, horario, turnoSugerido } from '../lib/formato'
+import { hayPantallaAnterior } from '../lib/navegacion'
 
 /** /clases/nueva y /clases/:id/editar */
 export function ClaseFormulario() {
@@ -44,9 +48,30 @@ function Formulario({ turnos, clase }: { turnos: Turno[]; clase?: Clase }) {
   const navigate = useNavigate()
   const guardar = useGuardarClase(clase?.id)
 
-  const [fecha, setFecha] = useState(clase?.fecha ?? hoyISO())
-  const [turnoId, setTurnoId] = useState(clase?.turno.id ?? turnoSugerido(turnos)?.id)
-  const [modalidad, setModalidad] = useState<Modalidad>(clase?.modalidad ?? 'GI')
+  // Una clase nueva puede venir con fecha y turno ya elegidos (botón "Registrar" del calendario).
+  const [params] = useSearchParams()
+  const fechaURL = params.get('fecha')
+  const turnoURL = turnos.find((t) => t.id === Number(params.get('turno')))
+  const fechaInicial = clase?.fecha ?? (fechaURL && /^\d{4}-\d{2}-\d{2}$/.test(fechaURL) ? fechaURL : hoyISO())
+  const turnoInicial = clase?.turno.id ?? (turnoURL ?? turnoSugerido(turnos))?.id
+
+  const [fecha, setFecha] = useState(fechaInicial)
+  const [turnoId, setTurnoId] = useState(turnoInicial)
+  // La modalidad se propone según el horario del turno ese día, hasta que alguien la elige a mano.
+  const programadaPara = (t: number | undefined, f: string) =>
+    modalidadProgramada(turnos.find((x) => x.id === t), f)
+  const [modalidad, setModalidad] = useState<Modalidad>(
+    clase?.modalidad ?? programadaPara(turnoInicial, fechaInicial) ?? 'GI',
+  )
+  const [modalidadElegida, setModalidadElegida] = useState(Boolean(clase))
+
+  function cambiarFechaOTurno(nuevaFecha: string, nuevoTurno: number | undefined) {
+    setFecha(nuevaFecha)
+    setTurnoId(nuevoTurno)
+    const programada = programadaPara(nuevoTurno, nuevaFecha)
+    if (!modalidadElegida && programada) setModalidad(programada)
+  }
+  const modalidadDelHorario = programadaPara(turnoId, fecha)
   const [tema, setTema] = useState(clase?.tema ?? '')
   const [tecnicas, setTecnicas] = useState<TecnicaResumen[]>(clase?.tecnicas ?? [])
   const [instructor, setInstructor] = useState(clase?.instructor ?? '')
@@ -56,7 +81,7 @@ function Formulario({ turnos, clase }: { turnos: Turno[]; clase?: Clase }) {
   // Al editar, el turno puede estar desactivado: se mantiene como opción.
   const opcionesTurno =
     clase && !turnos.some((t) => t.id === clase.turno.id)
-      ? [...turnos, { ...clase.turno, hora_inicio: clase.hora_inicio, hora_fin: clase.hora_fin, activo: false }]
+      ? [...turnos, { ...clase.turno, hora_inicio: clase.hora_inicio, hora_fin: clase.hora_fin, activo: false, dias: [] }]
       : turnos
 
   function enviar(e: FormEvent) {
@@ -74,7 +99,14 @@ function Formulario({ turnos, clase }: { turnos: Turno[]; clase?: Clase }) {
         video_url: texto(videoUrl),
         tecnica_ids: tecnicas.map((t) => t.id),
       },
-      { onSuccess: (guardada) => navigate(`/clases/${guardada.id}`, { replace: true }) },
+      {
+        onSuccess: (guardada) => {
+          // Al editar se vuelve al detalle de donde se vino (sin duplicarlo en el
+          // historial); al crear, el formulario se sustituye por la clase nueva.
+          if (clase && hayPantallaAnterior()) navigate(-1)
+          else navigate(`/clases/${guardada.id}`, { replace: true })
+        },
+      },
     )
   }
 
@@ -91,15 +123,19 @@ function Formulario({ turnos, clase }: { turnos: Turno[]; clase?: Clase }) {
   return (
     <form onSubmit={enviar} className="space-y-6">
       <div className="space-y-3">
-        <Link to={volverA} className="inline-block text-sm font-semibold text-texto-suave hover:text-texto">
-          ← Cancelar
-        </Link>
+        <Volver alternativa={volverA} texto="Cancelar" />
         <Titulo>{clase ? 'Editar clase' : 'Nueva clase'}</Titulo>
       </div>
 
-      <Campo etiqueta="Fecha">
-        <Input type="date" required value={fecha} onChange={(e) => setFecha(e.target.value)} />
-      </Campo>
+      {/* div y no Campo (<label>): el selector contiene sus propios botones. */}
+      <div className="space-y-1.5">
+        <span className="block text-sm font-semibold text-texto-suave">Fecha</span>
+        <SelectorFecha
+          etiqueta="Fecha de la clase"
+          valor={fecha}
+          onChange={(v) => cambiarFechaOTurno(v, turnoId)}
+        />
+      </div>
 
       <fieldset className="space-y-1.5">
         <legend className="mb-1.5 text-sm font-semibold text-texto-suave">Turno</legend>
@@ -109,7 +145,7 @@ function Formulario({ turnos, clase }: { turnos: Turno[]; clase?: Clase }) {
               key={t.id}
               type="button"
               aria-pressed={turnoId === t.id}
-              onClick={() => setTurnoId(t.id)}
+              onClick={() => cambiarFechaOTurno(fecha, t.id)}
               className={`min-h-16 rounded-xl border px-3 text-left transition-colors ${
                 turnoId === t.id
                   ? 'border-acento bg-acento text-black'
@@ -129,11 +165,25 @@ function Formulario({ turnos, clase }: { turnos: Turno[]; clase?: Clase }) {
         <legend className="mb-1.5 text-sm font-semibold text-texto-suave">Modalidad</legend>
         <div className="flex gap-2">
           {(Object.keys(MODALIDADES) as Modalidad[]).map((m) => (
-            <Chip key={m} activo={modalidad === m} onClick={() => setModalidad(m)}>
+            <Chip
+              key={m}
+              activo={modalidad === m}
+              onClick={() => {
+                setModalidad(m)
+                setModalidadElegida(true)
+              }}
+            >
               {MODALIDADES[m]}
             </Chip>
           ))}
         </div>
+        {modalidadDelHorario && (
+          <p className="mt-1.5 text-xs text-texto-suave">
+            {modalidad === modalidadDelHorario
+              ? 'Según el horario de este turno.'
+              : `El horario de este turno ese día es ${MODALIDADES[modalidadDelHorario]}.`}
+          </p>
+        )}
       </fieldset>
 
       <Campo etiqueta="Tema">

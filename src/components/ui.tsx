@@ -87,6 +87,51 @@ export function Textarea({ className, ...props }: TextareaHTMLAttributes<HTMLTex
   return <textarea className={cx(CAMPO, 'min-h-28 py-3', className)} {...props} />
 }
 
+/** Interruptor sí/no con su explicación. */
+export function Interruptor({
+  etiqueta,
+  ayuda,
+  activo,
+  onChange,
+  disabled = false,
+}: {
+  etiqueta: string
+  ayuda?: string
+  activo: boolean
+  onChange: (activo: boolean) => void
+  disabled?: boolean
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={activo}
+      disabled={disabled}
+      onClick={() => onChange(!activo)}
+      className="flex w-full items-center justify-between gap-4 rounded-xl border border-borde bg-superficie p-4 text-left disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      <span>
+        <span className="block font-semibold">{etiqueta}</span>
+        {ayuda && <span className="block text-sm text-texto-suave">{ayuda}</span>}
+      </span>
+      <span
+        aria-hidden
+        className={cx(
+          'relative h-7 w-12 shrink-0 rounded-full transition-colors',
+          activo ? 'bg-acento' : 'bg-borde-fuerte',
+        )}
+      >
+        <span
+          className={cx(
+            'absolute top-1 size-5 rounded-full transition-all',
+            activo ? 'left-6 bg-black' : 'left-1 bg-texto-suave',
+          )}
+        />
+      </span>
+    </button>
+  )
+}
+
 // --- Chips y etiquetas ---
 
 export function Chip({

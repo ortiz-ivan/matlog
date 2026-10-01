@@ -1,16 +1,11 @@
 import { useId, useMemo, useState } from 'react'
 
-import { useCrearTecnica, useTecnicas } from '../api/queries'
+import { useGuardarTecnica, useTecnicas } from '../api/queries'
 import type { Categoria, Posicion, TecnicaResumen } from '../api/types'
-import { CATEGORIAS, POSICIONES } from '../lib/formato'
+import { CATEGORIAS, POSICIONES, normalizar } from '../lib/formato'
 import { Boton, Input, MensajeError, Select, Spinner } from './ui'
 
 const MAX_RESULTADOS = 8
-
-/** Minúsculas y sin tildes, para que "triangulo" encuentre "Triángulo". */
-function normalizar(texto: string): string {
-  return texto.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim()
-}
 
 interface Props {
   seleccionadas: TecnicaResumen[]
@@ -141,7 +136,7 @@ function NuevaTecnica({
   onCreada: (t: TecnicaResumen) => void
   onCancelar: () => void
 }) {
-  const crear = useCrearTecnica()
+  const crear = useGuardarTecnica()
   const [categoria, setCategoria] = useState<Categoria>('FINALIZACION')
   const [posicion, setPosicion] = useState<Posicion>('GUARDIA_CERRADA')
 
