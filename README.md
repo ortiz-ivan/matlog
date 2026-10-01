@@ -42,26 +42,44 @@ pnpm preview    # sirve el build
   (`vite.config.ts`): solo scripts propios, estilos propios y de Google Fonts, y
   conexiones solo al origen de `VITE_API_URL`. Es lo que impide que un script inyectado
   robe el token. No se aplica en `pnpm dev`, porque el HMR necesita scripts inline.
-- **Al publicar**, el servidor debe añadir las cabeceras que no funcionan en `<meta>`:
-
-  ```text
-  Content-Security-Policy: frame-ancestors 'none'
-  X-Content-Type-Options: nosniff
-  Referrer-Policy: strict-origin-when-cross-origin
-  Strict-Transport-Security: max-age=31536000
-  ```
-
-  Para publicar, compilar con las dependencias exactas del lockfile y comprobar antes que
-  ninguna tiene vulnerabilidades conocidas:
-
-  ```bash
-  pnpm install --frozen-lockfile
-  pnpm audit --prod
-  pnpm build
-  ```
-
-  Si se añade un recurso externo nuevo (otra fuente, un CDN, imágenes remotas), hay que
+- **Cabeceras del servidor**: las que no funcionan en `<meta>` (`frame-ancestors`, HSTS…)
+  están en `public/_headers`, que Cloudflare Pages aplica. En otro hosting, configurarlas
+  ahí (más `X-Content-Type-Options: nosniff` y `Referrer-Policy`, que Pages ya pone solo).
+- Si se añade un recurso externo nuevo (otra fuente, un CDN, imágenes remotas), hay que
   permitirlo en la CSP de `vite.config.ts` o el navegador lo bloqueará.
+
+## Publicación (Cloudflare Pages)
+
+1. En Cloudflare: **Workers & Pages → Create → Pages → Connect to Git** con este repo.
+2. Configuración del build:
+
+   | Campo | Valor |
+   |---|---|
+   | Framework preset | None |
+   | Build command | `pnpm build` |
+   | Build output directory | `dist` |
+
+3. Variables de entorno (**Settings → Variables and Secrets**):
+
+   | Variable | Valor |
+   |---|---|
+   | `VITE_API_URL` | La URL pública de la API en Railway, sin barra final |
+   | `PNPM_VERSION` | `11.21.0` (Pages no la detecta del lockfile) |
+
+   La versión de Node sale de `.node-version`. Si falta `VITE_API_URL`, el build falla.
+4. Añadir el dominio de Pages (`https://<proyecto>.pages.dev`) a `CORS_ORIGINS` del
+   backend. Las *preview deployments* tienen otro dominio por cada versión y no están
+   en `CORS_ORIGINS`: sirven para ver la interfaz, pero no pueden llamar a la API.
+
+Sin rutas especiales: al no haber `404.html`, Pages sirve `index.html` para cualquier
+ruta y React Router se encarga.
+
+Antes de publicar, comprobar que ninguna dependencia tiene vulnerabilidades conocidas:
+
+```bash
+pnpm install --frozen-lockfile
+pnpm audit --prod
+```
 
 ## Estructura
 
