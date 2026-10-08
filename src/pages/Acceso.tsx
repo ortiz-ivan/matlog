@@ -1,11 +1,9 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { Link } from 'react-router'
 
-import type { Cinturon } from '../api/types'
 import { useAuth } from '../auth/context'
 import { Logo } from '../components/Logo'
-import { Boton, Campo, Input, MensajeError, Select } from '../components/ui'
-import { CINTURONES } from '../lib/formato'
+import { Boton, Campo, Input, MensajeError } from '../components/ui'
 
 function PantallaAcceso({ titulo, children }: { titulo: string; children: ReactNode }) {
   return (
@@ -87,7 +85,6 @@ export function Registro() {
     username: '',
     email: '',
     password: '',
-    cinturon: '' as Cinturon | '',
     codigo_invitacion: '',
   })
 
@@ -99,11 +96,7 @@ export function Registro() {
   return (
     <PantallaAcceso titulo="Crear cuenta">
       <form
-        onSubmit={(e) =>
-          enviar(e, () =>
-            registro({ ...datos, cinturon: datos.cinturon === '' ? null : datos.cinturon }),
-          )
-        }
+        onSubmit={(e) => enviar(e, () => registro(datos))}
         className="space-y-4"
       >
         <Campo etiqueta="Nombre">
@@ -152,16 +145,6 @@ export function Registro() {
             value={datos.password}
             onChange={cambiar('password')}
           />
-        </Campo>
-        <Campo etiqueta="Cinturón (opcional)">
-          <Select value={datos.cinturon} onChange={cambiar('cinturon')}>
-            <option value="">—</option>
-            {Object.entries(CINTURONES).map(([valor, texto]) => (
-              <option key={valor} value={valor}>
-                {texto}
-              </option>
-            ))}
-          </Select>
         </Campo>
         <Campo etiqueta="Código de invitación" ayuda="Pídeselo a un compañero de la academia.">
           <Input

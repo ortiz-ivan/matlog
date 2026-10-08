@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router'
 
 import { useActualizarUsuario, useCrearUsuario, useUsuario } from '../api/queries'
-import type { Cinturon, Usuario, UsuarioActualizar } from '../api/types'
+import type { Cinturon, DatosAcademia, Usuario, UsuarioActualizar } from '../api/types'
 import { useAuth } from '../auth/context'
 import {
   Boton,
@@ -14,8 +14,10 @@ import {
   Select,
   Titulo,
 } from '../components/ui'
+import { BarraCinturon } from '../components/Cinturon'
+import { SelectorFecha } from '../components/SelectorFecha'
 import { Volver } from '../components/Volver'
-import { CINTURONES } from '../lib/formato'
+import { CINTURONES, gradoMaximo, hoyISO, textoGrado } from '../lib/formato'
 import { useVolver } from '../lib/navegacion'
 
 /** /usuarios/nuevo y /usuarios/:id — solo admins. */
@@ -32,22 +34,68 @@ function generarPassword(longitud = 10): string {
   return Array.from(aleatorios, (n) => letras[n % letras.length]).join('')
 }
 
-function SelectorCinturon({
+const SIN_DATOS_ACADEMIA: DatosAcademia = { cinturon: null, grado: 0, fecha_ingreso: null }
+
+/** Cinturón, grado y fecha de ingreso: solo los asigna un admin y se ven en Compañeros. */
+function CamposAcademia({
   valor,
   onChange,
 }: {
-  valor: Cinturon | ''
-  onChange: (v: Cinturon | '') => void
+  valor: DatosAcademia
+  onChange: (v: DatosAcademia) => void
 }) {
+  const maximo = gradoMaximo(valor.cinturon)
+
   return (
-    <Select value={valor} onChange={(e) => onChange(e.target.value as Cinturon | '')}>
-      <option value="">—</option>
-      {Object.entries(CINTURONES).map(([v, texto]) => (
-        <option key={v} value={v}>
-          {texto}
-        </option>
-      ))}
-    </Select>
+    <fieldset className="space-y-4 rounded-2xl border border-borde bg-superficie p-4">
+      <legend className="px-1 text-sm font-semibold text-texto-suave">En la academia</legend>
+      <BarraCinturon cinturon={valor.cinturon} grado={valor.grado} />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Campo etiqueta="Cinturón">
+          <Select
+            value={valor.cinturon ?? ''}
+            // Un cinturón nuevo empieza sin grados (el backend hace lo mismo).
+            onChange={(e) =>
+              onChange({ ...valor, cinturon: (e.target.value || null) as Cinturon | null, grado: 0 })
+            }
+          >
+            <option value="">—</option>
+            {Object.entries(CINTURONES).map(([v, texto]) => (
+              <option key={v} value={v}>
+                {texto}
+              </option>
+            ))}
+          </Select>
+        </Campo>
+        <Campo etiqueta="Grado">
+          <Select
+            value={valor.grado}
+            disabled={valor.cinturon === null}
+            onChange={(e) => onChange({ ...valor, grado: Number(e.target.value) })}
+          >
+            {Array.from({ length: maximo + 1 }, (_, n) => (
+              <option key={n} value={n}>
+                {textoGrado(n)}
+              </option>
+            ))}
+          </Select>
+        </Campo>
+      </div>
+      {/* div y no Campo (<label>): el selector contiene sus propios botones. */}
+      <div className="space-y-1.5">
+        <span className="block text-sm font-semibold text-texto-suave">Fecha de ingreso</span>
+        <SelectorFecha
+          etiqueta="Fecha de ingreso a la academia"
+          placeholder="Sin registrar"
+          permitirVacio
+          saltoAnual
+          min="1950-01-01"
+          max={hoyISO()}
+          valor={valor.fecha_ingreso ?? ''}
+          onChange={(v) => onChange({ ...valor, fecha_ingreso: v || null })}
+        />
+      </div>
+    </fieldset>
   )
 }
 
@@ -60,9 +108,9 @@ function Alta() {
     username: '',
     email: '',
     password: generarPassword(),
-    cinturon: '' as Cinturon | '',
     es_admin: false,
   })
+  const [academia, setAcademia] = useState(SIN_DATOS_ACADEMIA)
 
   function cambiar<K extends keyof typeof datos>(campo: K, valor: (typeof datos)[K]) {
     setDatos((d) => ({ ...d, [campo]: valor }))
@@ -70,11 +118,7 @@ function Alta() {
 
   function enviar(e: FormEvent) {
     e.preventDefault()
-    crear.mutate({
-      ...datos,
-      nombre: datos.nombre.trim(),
-      cinturon: datos.cinturon === '' ? null : datos.cinturon,
-    })
+    crear.mutate({ ...datos, ...academia, nombre: datos.nombre.trim() })
   }
 
   if (crear.isSuccess) {
@@ -84,7 +128,8 @@ function Alta() {
         password={datos.password}
         onOtra={() => {
           crear.reset()
-          setDatos({ nombre: '', username: '', email: '', password: generarPassword(), cinturon: '', es_admin: false })
+          setDatos({ nombre: '', username: '', email: '', password: generarPassword(), es_admin: false })
+          setAcademia(SIN_DATOS_ACADEMIA)
         }}
       />
     )
@@ -148,9 +193,7 @@ function Alta() {
           </Boton>
         </div>
       </Campo>
-      <Campo etiqueta="Cinturón (opcional)">
-        <SelectorCinturon valor={datos.cinturon} onChange={(v) => cambiar('cinturon', v)} />
-      </Campo>
+      <CamposAcademia valor={academia} onChange={setAcademia} />
       <Interruptor
         etiqueta="Administrador"
         ayuda="Puede gestionar usuarios y borrar clases y técnicas."
@@ -243,7 +286,11 @@ function FormularioEdicion({ usuario }: { usuario: Usuario }) {
   const volver = useVolver('/usuarios')
 
   const [nombre, setNombre] = useState(usuario.nombre)
-  const [cinturon, setCinturon] = useState<Cinturon | ''>(usuario.cinturon ?? '')
+  const [academia, setAcademia] = useState<DatosAcademia>({
+    cinturon: usuario.cinturon,
+    grado: usuario.grado,
+    fecha_ingreso: usuario.fecha_ingreso,
+  })
   const [esAdmin, setEsAdmin] = useState(usuario.es_admin)
   const [activo, setActivo] = useState(usuario.activo)
   const [password, setPassword] = useState('')
@@ -253,7 +300,9 @@ function FormularioEdicion({ usuario }: { usuario: Usuario }) {
     // Solo lo que cambió: el backend aplica cambios parciales.
     const cambios: UsuarioActualizar = {}
     if (nombre.trim() !== usuario.nombre) cambios.nombre = nombre.trim()
-    if ((cinturon || null) !== usuario.cinturon) cambios.cinturon = cinturon || null
+    if (academia.cinturon !== usuario.cinturon) cambios.cinturon = academia.cinturon
+    if (academia.grado !== usuario.grado) cambios.grado = academia.grado
+    if (academia.fecha_ingreso !== usuario.fecha_ingreso) cambios.fecha_ingreso = academia.fecha_ingreso
     if (esAdmin !== usuario.es_admin) cambios.es_admin = esAdmin
     if (activo !== usuario.activo) cambios.activo = activo
     if (password) cambios.password = password
@@ -273,9 +322,7 @@ function FormularioEdicion({ usuario }: { usuario: Usuario }) {
       <Campo etiqueta="Nombre">
         <Input required maxLength={100} value={nombre} onChange={(e) => setNombre(e.target.value)} />
       </Campo>
-      <Campo etiqueta="Cinturón">
-        <SelectorCinturon valor={cinturon} onChange={setCinturon} />
-      </Campo>
+      <CamposAcademia valor={academia} onChange={setAcademia} />
 
       <div className="space-y-3">
         <Interruptor

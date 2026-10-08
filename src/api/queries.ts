@@ -5,6 +5,7 @@ import { api, tokenStore } from './client'
 import type {
   Clase,
   ClaseIn,
+  Companero,
   FiltrosClases,
   Pagina,
   PerfilActualizar,
@@ -31,6 +32,7 @@ export const claves = {
   usuarios: ['usuarios'] as const,
   listaUsuarios: (q: string, pagina: number) => ['usuarios', 'lista', q, pagina] as const,
   usuario: (id: number) => ['usuarios', 'detalle', id] as const,
+  companeros: ['companeros'] as const,
 }
 
 function queryString(params: object): string {
@@ -169,7 +171,10 @@ export function useCrearUsuario() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (datos: UsuarioNuevo) => api<Usuario>('/api/usuarios', { method: 'POST', json: datos }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: claves.usuarios }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: claves.usuarios })
+      await qc.invalidateQueries({ queryKey: claves.companeros })
+    },
   })
 }
 
@@ -181,9 +186,21 @@ export function useActualizarUsuario(id: number) {
     onSuccess: async (usuario) => {
       qc.setQueryData(claves.usuario(id), usuario)
       await qc.invalidateQueries({ queryKey: claves.usuarios })
+      await qc.invalidateQueries({ queryKey: claves.companeros })
       // Si el admin se edita a sí mismo, refrescar también su sesión (nombre, cinturón…).
       await qc.invalidateQueries({ queryKey: ['me'] })
     },
+  })
+}
+
+// --- Compañeros ---
+
+/** Todas las cuentas activas (una academia cabe en una petición), ordenadas por cinturón. */
+export function useCompaneros() {
+  return useQuery({
+    queryKey: claves.companeros,
+    queryFn: () => api<Companero[]>('/api/companeros'),
+    staleTime: 60_000,
   })
 }
 
@@ -195,7 +212,10 @@ export function useActualizarPerfil() {
     mutationFn: (cambios: PerfilActualizar) =>
       api<Usuario>('/api/auth/me', { method: 'PATCH', json: cambios }),
     // La sesión (cabecera, menú) se actualiza al momento sin volver a pedirla.
-    onSuccess: (usuario) => qc.setQueriesData({ queryKey: ['me'] }, usuario),
+    onSuccess: (usuario) => {
+      qc.setQueriesData({ queryKey: ['me'] }, usuario)
+      return qc.invalidateQueries({ queryKey: claves.companeros })
+    },
   })
 }
 

@@ -9,16 +9,31 @@ const NUEVA_CLASE = '/clases/nueva'
 
 const bajo = (raiz: string) => (ruta: string) => ruta === raiz || ruta.startsWith(`${raiz}/`)
 
+interface Seccion {
+  a: string
+  texto: string
+  icono: ComponentType
+  activa: (r: string) => boolean
+}
+
 /** Secciones de la app, iguales en móvil (barra inferior) y escritorio (cabecera). */
-const SECCIONES: { a: string; texto: string; icono: ComponentType; activa: (r: string) => boolean }[] = [
+const SECCIONES: Seccion[] = [
   { a: '/', texto: 'Inicio', icono: IconoCasa, activa: (r) => r === '/' },
   { a: '/calendario', texto: 'Calendario', icono: IconoCalendario, activa: bajo('/calendario') },
   { a: '/clases', texto: 'Historial', icono: IconoLista, activa: (r) => r !== NUEVA_CLASE && bajo('/clases')(r) },
   { a: '/tecnicas', texto: 'Técnicas', icono: IconoLibro, activa: bajo('/tecnicas') },
 ]
 
+/**
+ * Solo en la cabecera de escritorio. En móvil la barra inferior ya está completa (cuatro
+ * secciones con el "+" en el centro), así que van en el menú del avatar.
+ */
+const SECCIONES_ESCRITORIO: Omit<Seccion, 'icono'>[] = [
+  { a: '/companeros', texto: 'Compañeros', activa: bajo('/companeros') },
+]
+
 /** Pantallas cuya URL (filtros, mes…) se recuerda al volver desde la navegación. */
-const RECORDADAS = new Set(['/calendario', '/clases', '/tecnicas'])
+const RECORDADAS = new Set(['/calendario', '/clases', '/tecnicas', '/companeros'])
 
 const CONTENEDOR = 'mx-auto w-full max-w-2xl px-4 md:max-w-3xl'
 
@@ -49,7 +64,7 @@ export function Layout() {
 
           {/* Escritorio: la navegación sube a la cabecera. */}
           <nav aria-label="Principal" className="hidden flex-1 items-center gap-1 md:flex">
-            {SECCIONES.map(({ a, texto, activa }) => {
+            {[...SECCIONES, ...SECCIONES_ESCRITORIO].map(({ a, texto, activa }) => {
               const esActiva = activa(pathname)
               return (
                 <Link

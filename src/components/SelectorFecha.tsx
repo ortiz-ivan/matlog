@@ -17,6 +17,8 @@ interface Props {
   placeholder?: string
   /** Lado hacia el que se abre la tarjeta: "derecha" para campos pegados al borde derecho. */
   alinear?: 'izquierda' | 'derecha'
+  /** Botones « » para saltar de año en año (fechas de hace años, como un ingreso). */
+  saltoAnual?: boolean
 }
 
 /**
@@ -32,6 +34,7 @@ export function SelectorFecha({
   permitirVacio = false,
   placeholder = 'Elegir fecha',
   alinear = 'izquierda',
+  saltoAnual = false,
 }: Props) {
   const [abierto, setAbierto] = useState(false)
   const contenedor = useRef<HTMLDivElement>(null)
@@ -80,6 +83,7 @@ export function SelectorFecha({
             valor={valor}
             min={min}
             max={max}
+            saltoAnual={saltoAnual}
             onElegir={elegir}
             onBorrar={permitirVacio && valor ? () => elegir('') : undefined}
           />
@@ -93,12 +97,14 @@ function Mes({
   valor,
   min,
   max,
+  saltoAnual,
   onElegir,
   onBorrar,
 }: {
   valor: string
   min?: string
   max?: string
+  saltoAnual: boolean
   onElegir: (iso: string) => void
   onBorrar?: () => void
 }) {
@@ -155,15 +161,29 @@ function Mes({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <button type="button" aria-label="Mes anterior" onClick={() => cambiarMes(-1)} className={BOTON_MES}>
-          ‹
-        </button>
+        <div className="flex">
+          {saltoAnual && (
+            <button type="button" aria-label="Año anterior" onClick={() => cambiarMes(-12)} className={BOTON_MES}>
+              «
+            </button>
+          )}
+          <button type="button" aria-label="Mes anterior" onClick={() => cambiarMes(-1)} className={BOTON_MES}>
+            ‹
+          </button>
+        </div>
         <span className="font-display text-lg font-bold uppercase" aria-live="polite">
           {tituloMes(anio, mes)}
         </span>
-        <button type="button" aria-label="Mes siguiente" onClick={() => cambiarMes(1)} className={BOTON_MES}>
-          ›
-        </button>
+        <div className="flex">
+          <button type="button" aria-label="Mes siguiente" onClick={() => cambiarMes(1)} className={BOTON_MES}>
+            ›
+          </button>
+          {saltoAnual && (
+            <button type="button" aria-label="Año siguiente" onClick={() => cambiarMes(12)} className={BOTON_MES}>
+              »
+            </button>
+          )}
+        </div>
       </div>
 
       <div role="grid" ref={rejilla} onKeyDown={alTeclear} className="space-y-1">

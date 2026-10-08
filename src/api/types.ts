@@ -39,10 +39,20 @@ export interface UsuarioResumen {
   nombre: string
 }
 
-export interface Usuario extends UsuarioResumen {
+/** Datos de la academia: solo los asigna un admin. */
+export interface DatosAcademia {
+  cinturon: Cinturon | null
+  /** Stripes: 0-4, hasta 6 en el negro. */
+  grado: number
+  fecha_ingreso: string | null
+}
+
+/** Lo que cualquier usuario ve de los demás (sin username ni email). */
+export interface Companero extends UsuarioResumen, DatosAcademia {}
+
+export interface Usuario extends Companero {
   username: string
   email: string
-  cinturon: Cinturon | null
   es_admin: boolean
   activo: boolean
 }
@@ -52,7 +62,6 @@ export interface UsuarioCrear {
   username: string
   email: string
   password: string
-  cinturon: Cinturon | null
 }
 
 export interface Registro extends UsuarioCrear {
@@ -60,15 +69,14 @@ export interface Registro extends UsuarioCrear {
 }
 
 /** Alta hecha por un admin. */
-export interface UsuarioNuevo extends UsuarioCrear {
+export interface UsuarioNuevo extends UsuarioCrear, DatosAcademia {
   es_admin: boolean
 }
 
 /** Cambios de un admin sobre un usuario (solo se envían los que cambian). */
-export interface UsuarioActualizar {
+export interface UsuarioActualizar extends Partial<DatosAcademia> {
   nombre?: string
   password?: string
-  cinturon?: Cinturon | null
   es_admin?: boolean
   activo?: boolean
 }
@@ -158,5 +166,4 @@ export interface FiltrosClases {
 /** Lo que cada usuario puede cambiar de sí mismo. */
 export interface PerfilActualizar {
   nombre?: string
-  cinturon?: Cinturon | null
 }

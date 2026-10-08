@@ -11,6 +11,7 @@ import { Calendario } from './pages/Calendario'
 import { ClaseDetalle } from './pages/ClaseDetalle'
 import { ClaseFormulario } from './pages/ClaseFormulario'
 import { Clases } from './pages/Clases'
+import { Companeros } from './pages/Companeros'
 import { FichaTecnica } from './pages/FichaTecnica'
 import { Inicio } from './pages/Inicio'
 import { Perfil } from './pages/Perfil'
@@ -101,6 +102,7 @@ const router = createBrowserRouter([
               { path: '/tecnicas/:id', element: <FichaTecnica /> },
               { path: '/tecnicas/:id/editar', element: <TecnicaFormulario /> },
               { path: '/calendario', element: <Calendario /> },
+              { path: '/companeros', element: <Companeros /> },
               { path: '/perfil', element: <Perfil /> },
               {
                 element: <SoloAdmin />,

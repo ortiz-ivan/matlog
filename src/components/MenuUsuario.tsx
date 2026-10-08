@@ -65,6 +65,18 @@ export function MenuUsuario() {
             </svg>
             Mi perfil
           </Link>
+          {/* En escritorio está en la cabecera; en móvil no cabe en la barra inferior. */}
+          <Link
+            to="/companeros"
+            onClick={() => setAbierto(false)}
+            className="flex min-h-12 w-full items-center gap-3 border-b border-borde px-4 font-semibold hover:bg-superficie-alta md:hidden"
+          >
+            <svg aria-hidden viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth={2}>
+              <circle cx="9" cy="8" r="3.5" />
+              <path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14a6.5 6.5 0 0 1 3.5 6" strokeLinecap="round" />
+            </svg>
+            Compañeros
+          </Link>
           {usuario.es_admin && (
             <Link
               to="/turnos"

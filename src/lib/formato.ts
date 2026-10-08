@@ -44,6 +44,42 @@ export const CINTURONES: Record<Cinturon, string> = {
   NEGRO: 'Negro',
 }
 
+/** Del más alto al más bajo, como se agrupan en Compañeros. */
+export const CINTURONES_DESC = (Object.keys(CINTURONES) as Cinturon[]).reverse()
+
+/** Grados (stripes) que admite cada cinturón; el backend aplica el mismo límite. */
+export function gradoMaximo(cinturon: Cinturon | null): number {
+  if (cinturon === null) return 0
+  return cinturon === 'NEGRO' ? 6 : 4
+}
+
+/** 0 → "Sin grados"; 1 → "1 grado"; 3 → "3 grados". */
+export function textoGrado(grado: number): string {
+  if (grado === 0) return 'Sin grados'
+  return grado === 1 ? '1 grado' : `${grado} grados`
+}
+
+/** Tiempo desde una fecha: "3 años y 2 meses", "8 meses", "Menos de un mes". */
+export function antiguedad(iso: string, hoy = new Date()): string {
+  const desde = parseFecha(iso)
+  let meses = (hoy.getFullYear() - desde.getFullYear()) * 12 + hoy.getMonth() - desde.getMonth()
+  if (hoy.getDate() < desde.getDate()) meses -= 1
+  if (meses < 1) return 'Menos de un mes'
+  const anios = Math.floor(meses / 12)
+  const resto = meses % 12
+  const textoMeses = resto === 1 ? '1 mes' : `${resto} meses`
+  if (anios === 0) return textoMeses
+  const textoAnios = anios === 1 ? '1 año' : `${anios} años`
+  return resto === 0 ? textoAnios : `${textoAnios} y ${textoMeses}`
+}
+
+const mesAnio = new Intl.DateTimeFormat('es', { month: 'short', year: 'numeric' })
+
+/** "2024-03-15" → "mar 2024" */
+export function formatoMesAnio(iso: string): string {
+  return mesAnio.format(parseFecha(iso)).replace('.', '')
+}
+
 /** "Iván Ortiz" → "IO"; "ivan" → "IV". */
 export function iniciales(nombre: string): string {
   const partes = nombre.trim().split(/\s+/).filter(Boolean)

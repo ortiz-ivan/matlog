@@ -1,11 +1,13 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
+import { Link } from 'react-router'
 
 import { useActualizarPerfil, useCambiarPassword } from '../api/queries'
-import type { Cinturon, PerfilActualizar, Usuario } from '../api/types'
+import type { PerfilActualizar, Usuario } from '../api/types'
 import { useAuth } from '../auth/context'
-import { Boton, Campo, Etiqueta, Input, MensajeError, Select, Titulo } from '../components/ui'
+import { BarraCinturon } from '../components/Cinturon'
+import { Boton, Campo, Etiqueta, Input, MensajeError, Titulo } from '../components/ui'
 import { Volver } from '../components/Volver'
-import { CINTURONES, iniciales } from '../lib/formato'
+import { CINTURONES, antiguedad, formatoFechaCorta, iniciales, textoGrado } from '../lib/formato'
 
 /** /perfil — cada usuario edita sus datos y su contraseña. */
 export function Perfil() {
@@ -33,6 +35,7 @@ export function Perfil() {
       </div>
 
       <DatosPersonales usuario={usuario} />
+      <DatosAcademia usuario={usuario} />
       <CambiarPassword />
     </div>
   )
@@ -58,11 +61,9 @@ function Aviso({ children }: { children: ReactNode }) {
 function DatosPersonales({ usuario }: { usuario: Usuario }) {
   const actualizar = useActualizarPerfil()
   const [nombre, setNombre] = useState(usuario.nombre)
-  const [cinturon, setCinturon] = useState<Cinturon | ''>(usuario.cinturon ?? '')
 
   const cambios: PerfilActualizar = {}
   if (nombre.trim() !== usuario.nombre) cambios.nombre = nombre.trim()
-  if ((cinturon || null) !== usuario.cinturon) cambios.cinturon = cinturon || null
   const hayCambios = Object.keys(cambios).length > 0
 
   function enviar(e: FormEvent) {
@@ -85,22 +86,6 @@ function DatosPersonales({ usuario }: { usuario: Usuario }) {
             }}
           />
         </Campo>
-        <Campo etiqueta="Cinturón">
-          <Select
-            value={cinturon}
-            onChange={(e) => {
-              setCinturon(e.target.value as Cinturon | '')
-              actualizar.reset()
-            }}
-          >
-            <option value="">—</option>
-            {Object.entries(CINTURONES).map(([v, texto]) => (
-              <option key={v} value={v}>
-                {texto}
-              </option>
-            ))}
-          </Select>
-        </Campo>
         <dl className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
           <div>
             <dt className="text-texto-suave">Usuario</dt>
@@ -121,6 +106,46 @@ function DatosPersonales({ usuario }: { usuario: Usuario }) {
           Guardar datos
         </Boton>
       </form>
+    </Seccion>
+  )
+}
+
+/** Solo lectura: lo asigna un admin y se ve en Compañeros. */
+function DatosAcademia({ usuario }: { usuario: Usuario }) {
+  return (
+    <Seccion titulo="En la academia">
+      <BarraCinturon cinturon={usuario.cinturon} grado={usuario.grado} />
+      <dl className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+        <div>
+          <dt className="text-texto-suave">Cinturón</dt>
+          <dd className="font-semibold">
+            {usuario.cinturon
+              ? `${CINTURONES[usuario.cinturon]} · ${textoGrado(usuario.grado).toLowerCase()}`
+              : 'Sin asignar'}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-texto-suave">Fecha de ingreso</dt>
+          <dd className="font-semibold">
+            {usuario.fecha_ingreso
+              ? `${formatoFechaCorta(usuario.fecha_ingreso)} (${antiguedad(usuario.fecha_ingreso).toLowerCase()})`
+              : 'Sin registrar'}
+          </dd>
+        </div>
+      </dl>
+      {usuario.es_admin ? (
+        // Un admin también se lo asigna a sí mismo desde la gestión de usuarios.
+        <Link
+          to={`/usuarios/${usuario.id}`}
+          className="inline-flex min-h-10 items-center rounded-xl border border-acento px-4 text-sm font-bold text-acento hover:bg-acento hover:text-black"
+        >
+          Editar cinturón e ingreso
+        </Link>
+      ) : (
+        <p className="text-xs text-texto-suave">
+          Lo asigna un admin y lo ven tus compañeros. Si algo no es correcto, avísale.
+        </p>
+      )}
     </Seccion>
   )
 }
