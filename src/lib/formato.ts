@@ -1,4 +1,4 @@
-import type { Categoria, Cinturon, Modalidad, Posicion, Turno } from '../api/types'
+import type { Categoria, Cinturon, EstadoParticipacion, Medalla, Modalidad, Posicion, Turno } from '../api/types'
 
 export const MODALIDADES: Record<Modalidad, string> = {
   GI: 'Gi',
@@ -42,6 +42,18 @@ export const CINTURONES: Record<Cinturon, string> = {
   MORADO: 'Morado',
   MARRON: 'Marrón',
   NEGRO: 'Negro',
+}
+
+export const MEDALLAS: Record<Medalla, string> = {
+  ORO: 'Oro',
+  PLATA: 'Plata',
+  BRONCE: 'Bronce',
+}
+
+export const ESTADOS_PARTICIPACION: Record<EstadoParticipacion, string> = {
+  PENDIENTE: 'Pendiente de revisión',
+  APROBADA: 'Aprobada',
+  RECHAZADA: 'Rechazada',
 }
 
 /** Del más alto al más bajo, como se agrupan en Compañeros. */

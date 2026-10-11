@@ -1,10 +1,11 @@
 import { useMemo } from 'react'
-import { useSearchParams } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 
 import { useCompaneros } from '../api/queries'
-import type { Cinturon, Companero } from '../api/types'
+import type { Cinturon, CompaneroLista } from '../api/types'
 import { useAuth } from '../auth/context'
 import { BarraCinturon } from '../components/Cinturon'
+import { MedallasCompactas } from '../components/Medallas'
 import { Cargando, Chip, Input, MensajeError, Titulo } from '../components/ui'
 import {
   CINTURONES,
@@ -59,7 +60,15 @@ export function Companeros() {
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <Titulo>Compañeros</Titulo>
+        <div className="flex items-end justify-between gap-4">
+          <Titulo>Compañeros</Titulo>
+          <Link
+            to="/mis-torneos"
+            className="inline-flex min-h-10 shrink-0 items-center rounded-xl border border-acento px-4 text-sm font-bold text-acento hover:bg-acento hover:text-black"
+          >
+            Mis torneos
+          </Link>
+        </div>
         {companeros.data && (
           <p className="text-texto-suave">
             {total === 1 ? '1 persona entrena' : `${total} personas entrenan`} en la academia.
@@ -119,12 +128,15 @@ export function Companeros() {
   )
 }
 
-function TarjetaCompanero({ companero: c }: { companero: Companero }) {
+function TarjetaCompanero({ companero: c }: { companero: CompaneroLista }) {
   const esYo = useAuth().usuario?.id === c.id
 
   return (
-    <article
-      className={`space-y-4 rounded-2xl border bg-superficie p-4 ${esYo ? 'border-acento/60' : 'border-borde'}`}
+    <Link
+      to={`/companeros/${c.id}`}
+      className={`block h-full space-y-4 rounded-2xl border bg-superficie p-4 transition-colors hover:bg-superficie-alta ${
+        esYo ? 'border-acento/60' : 'border-borde hover:border-borde-fuerte'
+      }`}
     >
       <div className="flex items-center gap-3">
         <span
@@ -157,6 +169,15 @@ function TarjetaCompanero({ companero: c }: { companero: Companero }) {
           <span className="text-texto-suave">Fecha de ingreso sin registrar</span>
         )}
       </p>
-    </article>
+
+      {c.medallero.torneos > 0 && (
+        <div className="flex items-center justify-between gap-3 border-t border-borde pt-3 text-sm">
+          <span className="text-texto-suave">
+            {c.medallero.torneos === 1 ? '1 torneo' : `${c.medallero.torneos} torneos`}
+          </span>
+          <MedallasCompactas medallero={c.medallero} />
+        </div>
+      )}
+    </Link>
   )
 }

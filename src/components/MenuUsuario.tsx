@@ -1,6 +1,7 @@
 import { useCallback, useId, useRef, useState } from 'react'
 import { Link } from 'react-router'
 
+import { useRevision } from '../api/queries'
 import { useAuth } from '../auth/context'
 import { CINTURONES, iniciales } from '../lib/formato'
 import { useCerrarAlSalir } from '../lib/useCerrarAlSalir'
@@ -18,6 +19,10 @@ export function MenuUsuario() {
   const cerrar = useCallback(() => setAbierto(false), [])
   useCerrarAlSalir(abierto, cerrar, contenedor, boton)
 
+  // Participaciones esperando revisión: el admin lo ve sin tener que entrar a mirar.
+  const revision = useRevision('PENDIENTE', usuario?.es_admin ?? false)
+  const pendientes = revision.data?.length ?? 0
+
   if (!usuario) return null
 
   return (
@@ -25,18 +30,21 @@ export function MenuUsuario() {
       <button
         ref={boton}
         type="button"
-        aria-label={`Cuenta de ${usuario.nombre}`}
+        aria-label={`Cuenta de ${usuario.nombre}${pendientes > 0 ? ` (${pendientes} por revisar)` : ''}`}
         aria-haspopup="true"
         aria-expanded={abierto}
         aria-controls={idMenu}
         onClick={() => setAbierto((a) => !a)}
-        className={`grid size-10 place-items-center rounded-full border font-display text-sm font-bold transition-colors ${
+        className={`relative grid size-10 place-items-center rounded-full border font-display text-sm font-bold transition-colors ${
           abierto
             ? 'border-acento bg-acento text-black'
             : 'border-borde-fuerte bg-superficie-alta text-texto hover:border-texto-suave'
         }`}
       >
         {iniciales(usuario.nombre)}
+        {pendientes > 0 && (
+          <span aria-hidden className="absolute -top-0.5 -right-0.5 size-3 rounded-full bg-acento ring-2 ring-fondo" />
+        )}
       </button>
 
       {abierto && (
@@ -65,18 +73,34 @@ export function MenuUsuario() {
             </svg>
             Mi perfil
           </Link>
-          {/* En escritorio está en la cabecera; en móvil no cabe en la barra inferior. */}
           <Link
-            to="/companeros"
+            to="/mis-torneos"
             onClick={() => setAbierto(false)}
-            className="flex min-h-12 w-full items-center gap-3 border-b border-borde px-4 font-semibold hover:bg-superficie-alta md:hidden"
+            className="flex min-h-12 w-full items-center gap-3 border-b border-borde px-4 font-semibold hover:bg-superficie-alta"
           >
             <svg aria-hidden viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth={2}>
-              <circle cx="9" cy="8" r="3.5" />
-              <path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14a6.5 6.5 0 0 1 3.5 6" strokeLinecap="round" />
+              <circle cx="12" cy="9" r="5.5" />
+              <path d="m9 14-1.5 7L12 18.5l4.5 2.5L15 14" strokeLinejoin="round" />
             </svg>
-            Compañeros
+            Mis torneos
           </Link>
+          {usuario.es_admin && (
+            <Link
+              to="/revision"
+              onClick={() => setAbierto(false)}
+              className="flex min-h-12 w-full items-center gap-3 border-b border-borde px-4 font-semibold hover:bg-superficie-alta"
+            >
+              <svg aria-hidden viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth={2}>
+                <path d="M4 12.5 9 17.5 20 6.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span className="flex-1">Revisión de torneos</span>
+              {pendientes > 0 && (
+                <span className="rounded-full bg-acento px-2 text-xs font-bold text-black tabular-nums">
+                  {pendientes}
+                </span>
+              )}
+            </Link>
+          )}
           {usuario.es_admin && (
             <Link
               to="/turnos"

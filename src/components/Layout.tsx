@@ -16,21 +16,35 @@ interface Seccion {
   activa: (r: string) => boolean
 }
 
-/** Secciones de la app, iguales en móvil (barra inferior) y escritorio (cabecera). */
-const SECCIONES: Seccion[] = [
-  { a: '/', texto: 'Inicio', icono: IconoCasa, activa: (r) => r === '/' },
-  { a: '/calendario', texto: 'Calendario', icono: IconoCalendario, activa: bajo('/calendario') },
-  { a: '/clases', texto: 'Historial', icono: IconoLista, activa: (r) => r !== NUEVA_CLASE && bajo('/clases')(r) },
-  { a: '/tecnicas', texto: 'Técnicas', icono: IconoLibro, activa: bajo('/tecnicas') },
-]
+const INICIO: Seccion = { a: '/', texto: 'Inicio', icono: IconoCasa, activa: (r) => r === '/' }
+const CALENDARIO: Seccion = {
+  a: '/calendario',
+  texto: 'Calendario',
+  icono: IconoCalendario,
+  activa: bajo('/calendario'),
+}
+const HISTORIAL: Seccion = {
+  a: '/clases',
+  texto: 'Historial',
+  icono: IconoLista,
+  activa: (r) => r !== NUEVA_CLASE && bajo('/clases')(r),
+}
+const TECNICAS: Seccion = { a: '/tecnicas', texto: 'Técnicas', icono: IconoLibro, activa: bajo('/tecnicas') }
+const COMPANEROS: Seccion = {
+  a: '/companeros',
+  texto: 'Compañeros',
+  icono: IconoPersonas,
+  activa: bajo('/companeros'),
+}
+
+/** Escritorio: en la cabecera caben todas. */
+const SECCIONES_ESCRITORIO = [INICIO, CALENDARIO, HISTORIAL, TECNICAS, COMPANEROS]
 
 /**
- * Solo en la cabecera de escritorio. En móvil la barra inferior ya está completa (cuatro
- * secciones con el "+" en el centro), así que van en el menú del avatar.
+ * Móvil: la barra inferior admite cuatro, con el "+" en el centro. El historial queda
+ * fuera porque Inicio ya muestra las últimas clases y enlaza a él.
  */
-const SECCIONES_ESCRITORIO: Omit<Seccion, 'icono'>[] = [
-  { a: '/companeros', texto: 'Compañeros', activa: bajo('/companeros') },
-]
+const SECCIONES_MOVIL = [INICIO, CALENDARIO, COMPANEROS, TECNICAS]
 
 /** Pantallas cuya URL (filtros, mes…) se recuerda al volver desde la navegación. */
 const RECORDADAS = new Set(['/calendario', '/clases', '/tecnicas', '/companeros'])
@@ -51,8 +65,8 @@ export function Layout() {
   const destino = (a: string) => ultimas[a] ?? a
 
   // Móvil: el botón "+" (solo admins) va en el centro, con dos secciones a cada lado.
-  const izquierda = SECCIONES.slice(0, 2)
-  const derecha = SECCIONES.slice(2)
+  const izquierda = SECCIONES_MOVIL.slice(0, 2)
+  const derecha = SECCIONES_MOVIL.slice(2)
 
   return (
     <div className="min-h-dvh pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-12">
@@ -64,7 +78,7 @@ export function Layout() {
 
           {/* Escritorio: la navegación sube a la cabecera. */}
           <nav aria-label="Principal" className="hidden flex-1 items-center gap-1 md:flex">
-            {[...SECCIONES, ...SECCIONES_ESCRITORIO].map(({ a, texto, activa }) => {
+            {SECCIONES_ESCRITORIO.map(({ a, texto, activa }) => {
               const esActiva = activa(pathname)
               return (
                 <Link
@@ -203,6 +217,18 @@ function IconoCasa() {
       <path
         d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"
         strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+function IconoPersonas() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth={2}>
+      <circle cx="9" cy="8" r="3.5" />
+      <path
+        d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14a6.5 6.5 0 0 1 3.5 6"
+        strokeLinecap="round"
       />
     </svg>
   )

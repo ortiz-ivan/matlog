@@ -12,11 +12,16 @@ import { ClaseDetalle } from './pages/ClaseDetalle'
 import { ClaseFormulario } from './pages/ClaseFormulario'
 import { Clases } from './pages/Clases'
 import { Companeros } from './pages/Companeros'
+import { FichaCompanero } from './pages/FichaCompanero'
 import { FichaTecnica } from './pages/FichaTecnica'
 import { Inicio } from './pages/Inicio'
+import { MisTorneos } from './pages/MisTorneos'
+import { ParticipacionFormulario } from './pages/ParticipacionFormulario'
 import { Perfil } from './pages/Perfil'
+import { Revision } from './pages/Revision'
 import { TecnicaFormulario } from './pages/TecnicaFormulario'
 import { Tecnicas } from './pages/Tecnicas'
+import { TorneoFormulario, Torneos } from './pages/Torneos'
 import { TurnoFormulario, Turnos } from './pages/Turnos'
 import { UsuarioFormulario } from './pages/UsuarioFormulario'
 import { Usuarios } from './pages/Usuarios'
@@ -103,6 +108,10 @@ const router = createBrowserRouter([
               { path: '/tecnicas/:id/editar', element: <TecnicaFormulario /> },
               { path: '/calendario', element: <Calendario /> },
               { path: '/companeros', element: <Companeros /> },
+              { path: '/companeros/:id', element: <FichaCompanero /> },
+              { path: '/mis-torneos', element: <MisTorneos /> },
+              { path: '/mis-torneos/nueva', element: <ParticipacionFormulario /> },
+              { path: '/mis-torneos/:id', element: <ParticipacionFormulario /> },
               { path: '/perfil', element: <Perfil /> },
               {
                 element: <SoloAdmin />,
@@ -114,6 +123,9 @@ const router = createBrowserRouter([
                   { path: '/usuarios', element: <Usuarios /> },
                   { path: '/usuarios/nuevo', element: <UsuarioFormulario /> },
                   { path: '/usuarios/:id', element: <UsuarioFormulario /> },
+                  { path: '/revision', element: <Revision /> },
+                  { path: '/torneos', element: <Torneos /> },
+                  { path: '/torneos/:id', element: <TorneoFormulario /> },
                 ],
               },
             ],

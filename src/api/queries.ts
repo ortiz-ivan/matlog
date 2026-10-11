@@ -5,13 +5,20 @@ import { api, tokenStore } from './client'
 import type {
   Clase,
   ClaseIn,
-  Companero,
+  CompaneroLista,
+  EstadoParticipacion,
+  FichaCompanero,
   FiltrosClases,
   Pagina,
+  Participacion,
+  ParticipacionIn,
+  ParticipacionNueva,
   PerfilActualizar,
   Tecnica,
   TecnicaIn,
   Token,
+  Torneo,
+  TorneoIn,
   Turno,
   TurnoIn,
   Usuario,
@@ -33,6 +40,13 @@ export const claves = {
   listaUsuarios: (q: string, pagina: number) => ['usuarios', 'lista', q, pagina] as const,
   usuario: (id: number) => ['usuarios', 'detalle', id] as const,
   companeros: ['companeros'] as const,
+  companero: (id: number) => ['companeros', 'detalle', id] as const,
+  torneos: ['torneos'] as const,
+  torneo: (id: number) => ['torneos', 'detalle', id] as const,
+  participaciones: ['participaciones'] as const,
+  misParticipaciones: ['participaciones', 'mias'] as const,
+  participacion: (id: number) => ['participaciones', 'detalle', id] as const,
+  revision: (estado: EstadoParticipacion) => ['participaciones', 'revision', estado] as const,
 }
 
 function queryString(params: object): string {
@@ -199,8 +213,135 @@ export function useActualizarUsuario(id: number) {
 export function useCompaneros() {
   return useQuery({
     queryKey: claves.companeros,
-    queryFn: () => api<Companero[]>('/api/companeros'),
+    queryFn: () => api<CompaneroLista[]>('/api/companeros'),
     staleTime: 60_000,
+  })
+}
+
+export function useFichaCompanero(id: number) {
+  return useQuery({
+    queryKey: claves.companero(id),
+    queryFn: () => api<FichaCompanero>(`/api/companeros/${id}`),
+  })
+}
+
+// --- Torneos y participaciones ---
+
+export function useTorneos() {
+  return useQuery({
+    queryKey: claves.torneos,
+    queryFn: () => api<Torneo[]>('/api/torneos'),
+    staleTime: 60_000,
+  })
+}
+
+export function useTorneo(id: number) {
+  return useQuery({
+    queryKey: claves.torneo(id),
+    queryFn: () => api<Torneo>(`/api/torneos/${id}`),
+  })
+}
+
+/** Lo que muestra un torneo o una participación aparece también en fichas y medalleros. */
+async function refrescarTorneos(qc: ReturnType<typeof useQueryClient>) {
+  await Promise.all([
+    qc.invalidateQueries({ queryKey: claves.torneos }),
+    qc.invalidateQueries({ queryKey: claves.participaciones }),
+    qc.invalidateQueries({ queryKey: claves.companeros }),
+  ])
+}
+
+/** Sin id crea (cualquiera); con id corrige (admins). */
+export function useGuardarTorneo(id?: number) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (datos: TorneoIn) =>
+      id === undefined
+        ? api<Torneo>('/api/torneos', { method: 'POST', json: datos })
+        : api<Torneo>(`/api/torneos/${id}`, { method: 'PUT', json: datos }),
+    onSuccess: () => refrescarTorneos(qc),
+  })
+}
+
+export function useEliminarTorneo() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => api<void>(`/api/torneos/${id}`, { method: 'DELETE' }),
+    onSuccess: async (_, id) => {
+      qc.removeQueries({ queryKey: claves.torneo(id) })
+      await qc.invalidateQueries({ queryKey: claves.torneos, exact: true })
+    },
+  })
+}
+
+export function useMisParticipaciones() {
+  return useQuery({
+    queryKey: claves.misParticipaciones,
+    queryFn: () => api<Participacion[]>('/api/participaciones/mias'),
+  })
+}
+
+export function useParticipacion(id: number) {
+  return useQuery({
+    queryKey: claves.participacion(id),
+    queryFn: () => api<Participacion>(`/api/participaciones/${id}`),
+  })
+}
+
+/** Cola de revisión de los admins. */
+export function useRevision(estado: EstadoParticipacion = 'PENDIENTE', habilitada = true) {
+  return useQuery({
+    queryKey: claves.revision(estado),
+    queryFn: () => api<Participacion[]>(`/api/participaciones${queryString({ estado })}`),
+    enabled: habilitada,
+  })
+}
+
+export function useCrearParticipacion() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (datos: ParticipacionNueva) =>
+      api<Participacion>('/api/participaciones', { method: 'POST', json: datos }),
+    onSuccess: () => refrescarTorneos(qc),
+  })
+}
+
+export function useActualizarParticipacion(id: number) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (datos: ParticipacionIn) =>
+      api<Participacion>(`/api/participaciones/${id}`, { method: 'PUT', json: datos }),
+    onSuccess: () => refrescarTorneos(qc),
+  })
+}
+
+export function useEliminarParticipacion() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => api<void>(`/api/participaciones/${id}`, { method: 'DELETE' }),
+    onSuccess: async (_, id) => {
+      qc.removeQueries({ queryKey: claves.participacion(id) })
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: claves.misParticipaciones }),
+        qc.invalidateQueries({ queryKey: ['participaciones', 'revision'] }),
+        qc.invalidateQueries({ queryKey: claves.companeros }),
+      ])
+    },
+  })
+}
+
+/** Aprobar o rechazar (con un motivo opcional). */
+export function useRevisarParticipacion() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, aprobar, motivo }: { id: number; aprobar: boolean; motivo?: string }) =>
+      aprobar
+        ? api<Participacion>(`/api/participaciones/${id}/aprobar`, { method: 'POST' })
+        : api<Participacion>(`/api/participaciones/${id}/rechazar`, {
+            method: 'POST',
+            json: { motivo: motivo || null },
+          }),
+    onSuccess: () => refrescarTorneos(qc),
   })
 }
 

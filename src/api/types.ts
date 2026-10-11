@@ -2,6 +2,8 @@
 
 export type Cinturon = 'BLANCO' | 'AZUL' | 'MORADO' | 'MARRON' | 'NEGRO'
 export type Modalidad = 'GI' | 'NO_GI'
+export type Medalla = 'ORO' | 'PLATA' | 'BRONCE'
+export type EstadoParticipacion = 'PENDIENTE' | 'APROBADA' | 'RECHAZADA'
 export type Categoria =
   | 'GUARDIA'
   | 'PASAJE'
@@ -49,6 +51,23 @@ export interface DatosAcademia {
 
 /** Lo que cualquier usuario ve de los demás (sin username ni email). */
 export interface Companero extends UsuarioResumen, DatosAcademia {}
+
+/** Solo cuenta participaciones aprobadas. */
+export interface Medallero {
+  oro: number
+  plata: number
+  bronce: number
+  /** Torneos distintos en los que participó. */
+  torneos: number
+}
+
+export interface CompaneroLista extends Companero {
+  medallero: Medallero
+}
+
+export interface FichaCompanero extends CompaneroLista {
+  participaciones: ParticipacionPublica[]
+}
 
 export interface Usuario extends Companero {
   username: string
@@ -166,4 +185,47 @@ export interface FiltrosClases {
 /** Lo que cada usuario puede cambiar de sí mismo. */
 export interface PerfilActualizar {
   nombre?: string
+}
+
+// --- Torneos ---
+
+export interface Torneo {
+  id: number
+  nombre: string
+  fecha: string
+  lugar: string | null
+}
+
+export interface TorneoIn {
+  nombre: string
+  fecha: string
+  lugar: string | null
+}
+
+export interface ParticipacionIn {
+  torneo_id: number
+  modalidad: Modalidad
+  categoria: string
+  medalla: Medalla | null
+}
+
+/** Alta: un admin puede indicar de quién es; sin indicar, es la propia. */
+export interface ParticipacionNueva extends ParticipacionIn {
+  usuario_id?: number
+}
+
+/** Lo que ven los compañeros (solo de participaciones aprobadas). */
+export interface ParticipacionPublica {
+  id: number
+  torneo: Torneo
+  modalidad: Modalidad
+  categoria: string
+  medalla: Medalla | null
+}
+
+/** La ven su autor y los admins, con el estado de la revisión. */
+export interface Participacion extends ParticipacionPublica {
+  usuario: UsuarioResumen
+  estado: EstadoParticipacion
+  motivo_rechazo: string | null
 }
